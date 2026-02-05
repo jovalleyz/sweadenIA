@@ -132,14 +132,21 @@
             const [activeTab, setActiveTab] = React.useState('overview');
             const { ComposedChart, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Area, Line, LabelList } = window.Recharts;
             
-            // --- DATOS ---
+            // ==========================================
+            // === ZONA DE EDICIÓN DE DATOS (EMPIEZA AQUÍ) ===
+            // ==========================================
+
+            // 1. LISTA DE RIESGOS
+            // Si no hay riesgos, deja el array vacío: const risksData = [];
+            // El sistema detectará que está vacío y mostrará "Sin riesgos activos".
             const risksData = [
                 { id: 1, risk: 'Retraso entrega credenciales API Sweaden', impact: 'Alto', probability: 'Media', status: 'Abierto', owner: 'Sweaden (TI)', action: 'Reunión seguimiento 12/Feb' },
                 { id: 2, risk: 'Definición incompleta casos borde', impact: 'Medio', probability: 'Alta', status: 'Mitigado', owner: 'IDM', action: 'Taller diseño realizado' },
                 { id: 3, risk: 'Disponibilidad equipo pruebas UAT', impact: 'Alto', probability: 'Baja', status: 'Abierto', owner: 'Sweaden (Neg)', action: 'Solicitud bloqueo agenda' }
             ];
 
-            // Nombres exactos según el Excel
+            // 2. FASES DEL PROYECTO
+            // Actualiza el campo "progress" (0 a 100) y "status" ('Completado', 'En Progreso', 'Pendiente')
             const phasesData = [
                 { name: 'Actividades Previas', start: '27/11', end: '03/02', progress: 100, status: 'Completado' },
                 { name: 'Fase 1 - Inicio', start: '04/02', end: '10/02', progress: 20, status: 'En Progreso' },
@@ -150,12 +157,16 @@
                 { name: 'Cierre', start: '25/03', end: '09/04', progress: 0, status: 'Pendiente' }
             ];
 
+            // 3. RECURSOS
+            // Distribución de esfuerzo
             const resourceData = [
                 { name: 'IDM', value: 65, color: '#3b82f6', focus: 'Desarrollo, Configuración IA, QA Técnico' },
                 { name: 'Sweaden', value: 25, color: '#10b981', focus: 'Validación Negocio, Credenciales, UAT' },
                 { name: 'Mixto', value: 10, color: '#8b5cf6', focus: 'Co-creación, Definición de Flujos' },
             ];
 
+            // 4. CURVA DE AVANCE
+            // Datos para el gráfico de cronograma
             const progressTrend = [
                 { month: 'Nov', real: 0, estimado: 0 },
                 { month: 'Dic', real: 15, estimado: 15 },
@@ -165,6 +176,8 @@
                 { month: 'Abr', real: null, estimado: 100 },
             ];
 
+            // 5. HITOS PRINCIPALES
+            // type: 'normal' (gris), 'next' (azul - reloj), 'target' (ámbar - meta)
             const milestones = [
                 { date: '27 Nov', title: 'Inicio Propuesta', done: true, type: 'normal' },
                 { date: '06 Ene', title: 'Firma Contrato', done: true, type: 'normal' },
@@ -173,6 +186,10 @@
                 { date: '12 Mar', title: 'Go-Live', done: false, type: 'target' },
                 { date: '09 Abr', title: 'Cierre', done: false, type: 'normal' }
             ];
+
+            // ==========================================
+            // === FIN ZONA DE EDICIÓN ===
+            // ==========================================
 
             const today = new Date();
             const endDate = new Date('2026-04-09');
@@ -312,9 +329,16 @@
                                             <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full">Total Registrados: {risksData.length}</span>
                                         </div>
                                         <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                            {risksData.map((risk) => (
-                                                <RiskRow key={risk.id} risk={risk} />
-                                            ))}
+                                            {risksData.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                                                    <Icons.CheckCircle size={48} className="mb-2 text-emerald-400 opacity-50" />
+                                                    <p className="text-sm font-medium">¡Excelente! No hay riesgos activos reportados.</p>
+                                                </div>
+                                            ) : (
+                                                risksData.map((risk) => (
+                                                    <RiskRow key={risk.id} risk={risk} />
+                                                ))
+                                            )}
                                         </div>
                                     </Card>
                                 </div>
