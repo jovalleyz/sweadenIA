@@ -1,0 +1,389 @@
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard IA Conversacional - Sweaden</title>
+    
+    <!-- 1. Estilos Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. React y ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    
+    <!-- 3. Prop-types -->
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    
+    <!-- 4. Recharts -->
+    <script src="https://unpkg.com/recharts@2.5.0/umd/Recharts.js"></script>
+    
+    <!-- 5. Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #f8fafc; display: flex; justify-content: center; align-items: center;
+            z-index: 9999; flex-direction: column; color: #475569; transition: opacity 0.5s;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 flex flex-col min-h-screen">
+    
+    <div id="loading-screen">
+        <div class="mb-4">
+            <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+        <p class="text-sm font-medium text-slate-600">Cargando Dashboard...</p>
+    </div>
+
+    <div id="root" class="flex-grow"></div>
+
+    <script type="text/babel">
+        // --- ICONOS SVG ---
+        const Icons = {
+            Activity: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+            Clock: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            CheckCircle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            AlertTriangle: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+            ShieldAlert: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+            Layout: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>,
+            Calendar: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+            Target: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+            TrendingUp: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        };
+
+        // --- COMPONENTES UI ---
+        const Card = ({ children, className = "" }) => (
+            <div className={`bg-white rounded-xl shadow-sm border border-slate-100 p-6 ${className}`}>
+                {children}
+            </div>
+        );
+
+        const StatCard = ({ title, value, subtext, icon, colorClass, trend }) => {
+            const IconComponent = Icons[icon] || Icons.Activity;
+            return (
+                <Card>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-slate-500 text-sm font-medium mb-1">{title}</p>
+                            <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
+                            {subtext && <p className="text-xs text-slate-400 mt-1">{subtext}</p>}
+                        </div>
+                        <div className={`p-3 rounded-lg ${colorClass}`}>
+                            <IconComponent size={24} />
+                        </div>
+                    </div>
+                    {trend && (
+                        <div className="mt-4 flex items-center text-xs font-medium text-emerald-600 bg-emerald-50 w-fit px-2 py-1 rounded-full">
+                            <Icons.TrendingUp size={12} className="mr-1" />
+                            {trend}
+                        </div>
+                    )}
+                </Card>
+            );
+        };
+
+        const RiskRow = ({ risk }) => {
+            const impactColor = risk.impact === 'Alto' ? 'text-red-600 bg-red-50' : risk.impact === 'Medio' ? 'text-amber-600 bg-amber-50' : 'text-blue-600 bg-blue-50';
+            const statusColor = risk.status === 'Abierto' ? 'border-l-4 border-red-500' : 'border-l-4 border-emerald-500';
+
+            return (
+                <div className={`p-3 bg-white border border-slate-100 rounded-lg shadow-sm mb-3 ${statusColor} hover:shadow-md transition-shadow`}>
+                    <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-slate-800 text-sm flex-1 mr-2">{risk.risk}</h4>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${impactColor}`}>
+                            {risk.impact}
+                        </span>
+                    </div>
+                    <div className="flex flex-wrap gap-y-2 text-xs text-slate-500">
+                        <div className="w-1/2">
+                            <span className="font-medium text-slate-700">Resp:</span> {risk.owner}
+                        </div>
+                        <div className="w-1/2 text-right">
+                            <span className="font-medium text-slate-700">Estado:</span> {risk.status}
+                        </div>
+                        <div className="w-full mt-1 pt-2 border-t border-slate-50 flex items-start gap-1 text-slate-600">
+                           <Icons.Activity size={12} className="mt-0.5 text-blue-400" />
+                           <span>{risk.action}</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const MilestoneBadge = ({ type }) => {
+            if (type === 'next') return <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full flex items-center gap-1"><Icons.Clock size={10} /> Próximo</span>;
+            if (type === 'target') return <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full flex items-center gap-1"><Icons.Target size={10} /> Meta</span>;
+            return null;
+        };
+
+        // --- DASHBOARD APP ---
+        const ProjectDashboard = () => {
+            const [activeTab, setActiveTab] = React.useState('overview');
+            const { ComposedChart, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Area, Line, LabelList } = window.Recharts;
+            
+            // --- DATOS ---
+            const risksData = [
+                { id: 1, risk: 'Retraso entrega credenciales API Sweaden', impact: 'Alto', probability: 'Media', status: 'Abierto', owner: 'Sweaden (TI)', action: 'Reunión seguimiento 12/Feb' },
+                { id: 2, risk: 'Definición incompleta casos borde', impact: 'Medio', probability: 'Alta', status: 'Mitigado', owner: 'IDM', action: 'Taller diseño realizado' },
+                { id: 3, risk: 'Disponibilidad equipo pruebas UAT', impact: 'Alto', probability: 'Baja', status: 'Abierto', owner: 'Sweaden (Neg)', action: 'Solicitud bloqueo agenda' }
+            ];
+
+            // Nombres exactos según el Excel
+            const phasesData = [
+                { name: 'Actividades Previas', start: '27/11', end: '03/02', progress: 100, status: 'Completado' },
+                { name: 'Fase 1 - Inicio', start: '04/02', end: '10/02', progress: 20, status: 'En Progreso' },
+                { name: 'Fase 2 - Análisis', start: '11/02', end: '18/02', progress: 0, status: 'Pendiente' },
+                { name: 'Fase 3 - Diseño', start: '19/02', end: '25/02', progress: 0, status: 'Pendiente' },
+                { name: 'Fase 4 - Desarrollo', start: '26/02', end: '10/03', progress: 0, status: 'Pendiente' },
+                { name: 'Fase 6 - Producción', start: '26/02', end: '24/03', progress: 0, status: 'Pendiente' },
+                { name: 'Cierre', start: '25/03', end: '09/04', progress: 0, status: 'Pendiente' }
+            ];
+
+            const resourceData = [
+                { name: 'IDM', value: 65, color: '#3b82f6' },
+                { name: 'Sweaden', value: 25, color: '#10b981' },
+                { name: 'Mixto', value: 10, color: '#8b5cf6' },
+            ];
+
+            const progressTrend = [
+                { month: 'Nov', real: 0, estimado: 0 },
+                { month: 'Dic', real: 15, estimado: 15 },
+                { month: 'Ene', real: 25, estimado: 25 },
+                { month: 'Feb', real: 30, estimado: 40 },
+                { month: 'Mar', real: null, estimado: 80 },
+                { month: 'Abr', real: null, estimado: 100 },
+            ];
+
+            const milestones = [
+                { date: '27 Nov', title: 'Inicio Propuesta', done: true, type: 'normal' },
+                { date: '06 Ene', title: 'Firma Contrato', done: true, type: 'normal' },
+                { date: '11 Feb', title: 'Inicio Análisis', done: false, type: 'next' },
+                { date: '25 Feb', title: 'Inicio Integración', done: false, type: 'normal' },
+                { date: '12 Mar', title: 'Go-Live', done: false, type: 'target' },
+                { date: '09 Abr', title: 'Cierre', done: false, type: 'normal' }
+            ];
+
+            const today = new Date();
+            const endDate = new Date('2026-04-09');
+            const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+            const openRisks = risksData.filter(r => r.status === 'Abierto').length;
+
+            return (
+                <div className="flex flex-col min-h-screen">
+                    <div className="font-sans text-slate-800 p-4 md:p-8 max-w-7xl mx-auto flex-grow w-full">
+                        {/* HEADER */}
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wide">Proyecto Activo</span>
+                                    <span className="text-slate-400 text-xs">Actualizado: 05 Feb 2026</span>
+                                </div>
+                                <h1 className="text-3xl font-bold text-slate-900">Implementación IA Conversacional</h1>
+                                <p className="text-slate-500">Cliente: <span className="font-semibold text-slate-700">Sweaden Seguros</span></p>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => setActiveTab('overview')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeTab === 'overview' ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    <Icons.Layout size={16} className="inline mr-2" /> General
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('timeline')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${activeTab === 'timeline' ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                >
+                                    <Icons.Calendar size={16} className="inline mr-2" /> Cronograma
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* CONTENIDO PRINCIPAL */}
+                        {activeTab === 'overview' ? (
+                            <div className="space-y-6 animate-fade-in">
+                                {/* KPIs */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    <StatCard title="Progreso General" value="30%" subtext="Fase actual: Análisis" icon="Activity" colorClass="bg-blue-100 text-blue-600" trend="+5% esta semana" />
+                                    <StatCard title="Días Restantes" value={`${daysLeft} días`} subtext="Fecha Fin: 09 Abr 2026" icon="Clock" colorClass="bg-purple-100 text-purple-600" />
+                                    <StatCard title="Tareas Completadas" value="14 / 65" subtext="Hitos clave alcanzados" icon="CheckCircle" colorClass="bg-emerald-100 text-emerald-600" />
+                                    <StatCard title="Riesgos Abiertos" value={openRisks} subtext="Atención Requerida" icon="AlertTriangle" colorClass="bg-red-100 text-red-600" />
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <Card className="lg:col-span-2">
+                                        <h3 className="font-bold text-lg mb-4">Avance por Fases</h3>
+                                        <div className="h-72 w-full">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={phasesData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                                                    <XAxis type="number" domain={[0, 100]} hide />
+                                                    <YAxis dataKey="name" type="category" width={140} tick={{fontSize: 12, fill: '#64748b'}} />
+                                                    <Tooltip cursor={{fill: 'transparent'}} />
+                                                    <Bar dataKey="progress" name="Progreso" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20}>
+                                                        <LabelList dataKey="progress" position="right" formatter={(val) => `${val}%`} style={{ fill: '#64748b', fontSize: '12px', fontWeight: 'bold' }} />
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </Card>
+                                    <Card>
+                                        <h3 className="font-bold text-lg mb-4">Recursos</h3>
+                                        <div className="h-48 w-full relative">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie data={resourceData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                                        {resourceData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                                                <span className="block text-2xl font-bold text-slate-800">100%</span>
+                                                <span className="text-xs text-slate-400">Total</span>
+                                            </div>
+                                        </div>
+                                    </Card>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <Card className="lg:col-span-2">
+                                        <h3 className="font-bold text-lg mb-4">Línea de Tiempo Crítica</h3>
+                                        <div className="space-y-4">
+                                            {milestones.map((m, idx) => (
+                                                <div key={idx} className="flex items-center gap-4">
+                                                    <div className={`p-2 rounded-full ${m.done ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                                                        {m.done ? <Icons.CheckCircle size={16} /> : <Icons.Calendar size={16} />}
+                                                    </div>
+                                                    <div className="flex-1 border-b border-slate-50 pb-2">
+                                                        <div className="flex justify-between">
+                                                            <span className="font-medium text-sm text-slate-700">{m.title}</span>
+                                                            <span className="text-xs text-slate-400">{m.date}</span>
+                                                        </div>
+                                                        <MilestoneBadge type={m.type} />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Card>
+
+                                    <Card className="bg-slate-50 border-slate-200">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <Icons.ShieldAlert size={20} className="text-amber-600" />
+                                                <h3 className="font-bold text-lg text-slate-800">Riesgos</h3>
+                                            </div>
+                                            <span className="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full">Total Registrados: {risksData.length}</span>
+                                        </div>
+                                        <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {risksData.map((risk) => (
+                                                <RiskRow key={risk.id} risk={risk} />
+                                            ))}
+                                        </div>
+                                    </Card>
+                                </div>
+                            </div>
+                        ) : (
+                            /* VISTA DETALLADA (TAB 2) */
+                            <div className="space-y-6 animate-fade-in">
+                                <Card>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="font-bold text-lg">Curva de Avance (S-Curve)</h3>
+                                        <div className="flex gap-4 text-sm">
+                                            <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-500 rounded-full"></div> Avance Real</div>
+                                            <div className="flex items-center gap-1"><div className="w-8 h-1 bg-slate-400 rounded-full"></div> Estimado (Línea Base)</div>
+                                        </div>
+                                    </div>
+                                    <div className="h-80 w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <ComposedChart data={progressTrend} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                                <defs>
+                                                    <linearGradient id="colorReal" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <XAxis dataKey="month" />
+                                                <YAxis />
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                                <Tooltip />
+                                                <Area type="monotone" dataKey="real" stroke="#3b82f6" fillOpacity={1} fill="url(#colorReal)" strokeWidth={2} />
+                                                <Line type="monotone" dataKey="estimado" stroke="#64748b" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4, fill: '#64748b' }} />
+                                            </ComposedChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </Card>
+
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-6 py-4">Fase</th>
+                                                <th className="px-6 py-4">Inicio</th>
+                                                <th className="px-6 py-4">Fin</th>
+                                                <th className="px-6 py-4 text-center">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {phasesData.map((phase, idx) => (
+                                                <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="px-6 py-4 font-medium text-slate-800">{phase.name}</td>
+                                                    <td className="px-6 py-4 text-slate-500">{phase.start}</td>
+                                                    <td className="px-6 py-4 text-slate-500">{phase.end}</td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold
+                                                            ${phase.status === 'Completado' ? 'bg-emerald-100 text-emerald-700' : 
+                                                              phase.status === 'En Progreso' ? 'bg-blue-100 text-blue-700' : 
+                                                              'bg-slate-100 text-slate-500'}`}>
+                                                            {phase.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    
+                    {/* FOOTER */}
+                    <footer className="bg-white border-t border-slate-200 py-6 mt-auto">
+                        <div className="max-w-7xl mx-auto px-4 text-center">
+                            <p className="text-slate-500 text-sm font-medium">
+                                IDM 2026. Todos los derechos reservados.
+                            </p>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const startApp = () => {
+            if (window.React && window.ReactDOM && window.Recharts) {
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(<ProjectDashboard />);
+                document.getElementById('loading-screen').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 500);
+            } else {
+                console.log('Esperando librerías...');
+                setTimeout(startApp, 100);
+            }
+        };
+
+        startApp();
+    </script>
+</body>
+</html>
